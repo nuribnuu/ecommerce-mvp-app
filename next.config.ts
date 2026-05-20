@@ -2,7 +2,12 @@
 const nextConfig = {
   // config lain yang sudah ada
   images: {
-    domains: ['fakestoreapi.com'],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "fakestoreapi.com",
+      },
+    ],
   },
 };
 

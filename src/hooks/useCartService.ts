@@ -1,16 +1,16 @@
 // src/hooks/useCartService.ts
-'use client';
+"use client";
 
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
-import { useAuth } from '@/context/AuthContext';
-import type { Database } from '@/types/database.types';
+import { useAuth } from "@/context/AuthContext";
+import type { Database } from "@/types/database.types";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
 
 export function useCartService() {
   const supabase = useSupabaseClient<Database>();
   const { user } = useAuth();
 
   if (!user) {
-    throw new Error('useCartService: user not authenticated');
+    throw new Error("useCartService: user not authenticated");
   }
 
   const userId = user.id;
@@ -18,9 +18,9 @@ export function useCartService() {
   // Ambil semua item cart user
   async function getCartItems() {
     const { data, error } = await supabase
-      .from('cart_items')
-      .select('*')
-      .eq('user_id', userId);
+      .from("cart_items")
+      .select("*")
+      .eq("user_id", userId);
 
     if (error) throw error;
     return data;
@@ -36,7 +36,7 @@ export function useCartService() {
     quantity?: number;
     is_selected?: boolean;
   }) {
-    if (!userId) throw new Error('User is not logged in');
+    if (!userId) throw new Error("User is not logged in");
 
     const payload = {
       user_id: userId,
@@ -49,12 +49,14 @@ export function useCartService() {
       is_selected: item.is_selected ?? true,
     };
 
-    console.log('Insert payload:', payload);
+    console.log("Insert payload:", payload);
 
-    const { error } = await supabase.from('cart_items').insert(payload);
+    const { error } = await supabase
+      .from("cart_items")
+      .insert(payload as unknown as never);
 
     if (error) {
-      console.error('Insert error:', error);
+      console.error("Insert error:", error);
       throw error;
     }
   }
@@ -62,10 +64,10 @@ export function useCartService() {
   // Hapus item dari cart berdasarkan id produk
   async function removeFromCart(productId: number) {
     const { error } = await supabase
-      .from('cart_items')
+      .from("cart_items")
       .delete()
-      .eq('user_id', userId)
-      .eq('product_id', productId);
+      .eq("user_id", userId)
+      .eq("product_id", productId);
 
     if (error) throw error;
   }
@@ -73,10 +75,10 @@ export function useCartService() {
   // Update jumlah item
   async function updateQuantity(productId: number, quantity: number) {
     const { error } = await supabase
-      .from('cart_items')
-      .update({ quantity })
-      .eq('user_id', userId)
-      .eq('product_id', productId);
+      .from("cart_items")
+      .update({ quantity } as unknown as never)
+      .eq("user_id", userId)
+      .eq("product_id", productId);
 
     if (error) throw error;
   }

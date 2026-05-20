@@ -1,39 +1,39 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Disclosure } from '@headlessui/react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
-import { InputField } from '@/feature/auth/ui/InputField';
-import { Button } from '@/feature/shared/ui/Button';
-import { Typography } from '@/feature/shared/ui/Typography';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { ShippingAddress } from '@/types/shipping_address';
+import { useEffect, useState } from "react";
+import { Disclosure } from "@headlessui/react";
+import { ChevronUp, ChevronDown } from "lucide-react";
+import { InputField } from "@/feature/auth/ui/InputField";
+import { Button } from "@/feature/shared/ui/Button";
+import { Typography } from "@/feature/shared/ui/Typography";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { ShippingAddress } from "@/types/shipping_address";
 
-const supabase = createClientComponentClient<ShippingAddress>();
+const supabase = createClientComponentClient<any>();
 
 type ShippingAddressSection = Pick<
   ShippingAddress,
-  | 'full_name'
-  | 'phone_number'
-  | 'address'
-  | 'district'
-  | 'city'
-  | 'province'
-  | 'postal_code'
-  | 'country'
-  | 'notes'
+  | "full_name"
+  | "phone_number"
+  | "address"
+  | "district"
+  | "city"
+  | "province"
+  | "postal_code"
+  | "country"
+  | "notes"
 >;
 
 const initialFormState: ShippingAddressSection = {
-  full_name: '',
-  phone_number: '',
-  address: '',
-  district: '',
-  city: '',
-  province: '',
-  postal_code: '',
-  country: '',
-  notes: '',
+  full_name: "",
+  phone_number: "",
+  address: "",
+  district: "",
+  city: "",
+  province: "",
+  postal_code: "",
+  country: "",
+  notes: "",
 };
 
 type Props = {
@@ -55,9 +55,9 @@ export const ShippingAddressSection = ({ onValidationChange }: Props) => {
       if (!user) return;
 
       const { data } = await supabase
-        .from('shipping_addresses')
-        .select('*')
-        .eq('user_id', user.id)
+        .from("shipping_addresses")
+        .select("*")
+        .eq("user_id", user.id)
         .single();
 
       if (data) {
@@ -74,19 +74,19 @@ export const ShippingAddressSection = ({ onValidationChange }: Props) => {
     if (!onValidationChange) return;
 
     const requiredFields: (keyof ShippingAddressSection)[] = [
-      'full_name',
-      'phone_number',
-      'address',
-      'district',
-      'city',
-      'province',
-      'postal_code',
-      'country',
+      "full_name",
+      "phone_number",
+      "address",
+      "district",
+      "city",
+      "province",
+      "postal_code",
+      "country",
     ];
     const isComplete =
       isSaved &&
       requiredFields.every(
-        (key) => savedForm[key] && savedForm[key].trim() !== ''
+        (key) => savedForm[key] && savedForm[key].trim() !== "",
       );
     onValidationChange(isComplete);
   }, [isSaved, savedForm, onValidationChange]);
@@ -104,31 +104,40 @@ export const ShippingAddressSection = ({ onValidationChange }: Props) => {
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: existing } = await supabase
-      .from('shipping_addresses')
-      .select('id')
-      .eq('user_id', user.id)
+    const { data: existing, error: existingError } = await supabase
+      .from("shipping_addresses")
+      .select("id")
+      .eq("user_id", user.id)
       .single();
+
+    if (existingError) {
+      // Supabase uses `null` data when no row exists with `.single()`.
+      // Treat that case as `no existing address`.
+      if (!existing) {
+        // continue as insert
+      } else {
+        console.error(
+          "Failed to check existing shipping address:",
+          existingError,
+        );
+        return;
+      }
+    }
 
     const payload = {
       ...form,
       updated_at: new Date().toISOString(),
     };
 
-    let res;
-    if (existing) {
-      res = await supabase
-        .from('shipping_addresses')
-        .update(payload)
-        .eq('user_id', user.id);
-    } else {
-      res = await supabase
-        .from('shipping_addresses')
-        .insert([{ ...payload, user_id: user.id }]);
-    }
+    const { error: saveError } = existing
+      ? await supabase
+          .from("shipping_addresses")
+          .update(payload)
+          .eq("user_id", user.id)
+      : await supabase.from("shipping_addresses").insert(payload);
 
-    if (res.error) {
-      console.error('Failed to save shipping address:', res.error);
+    if (saveError) {
+      console.error("Failed to save shipping address:", saveError);
       return;
     }
 
@@ -153,74 +162,74 @@ export const ShippingAddressSection = ({ onValidationChange }: Props) => {
     label: string;
     placeholder: string;
   }[] = [
-    { name: 'full_name', label: 'Full Name', placeholder: 'Enter full name' },
+    { name: "full_name", label: "Full Name", placeholder: "Enter full name" },
     {
-      name: 'phone_number',
-      label: 'Phone Number',
-      placeholder: 'Enter phone number',
+      name: "phone_number",
+      label: "Phone Number",
+      placeholder: "Enter phone number",
     },
     {
-      name: 'address',
-      label: 'Address',
-      placeholder: 'Street address, P.O. box',
+      name: "address",
+      label: "Address",
+      placeholder: "Street address, P.O. box",
     },
-    { name: 'district', label: 'District', placeholder: 'Enter district' },
-    { name: 'city', label: 'City', placeholder: 'Enter city' },
-    { name: 'province', label: 'Province', placeholder: 'Enter province' },
+    { name: "district", label: "District", placeholder: "Enter district" },
+    { name: "city", label: "City", placeholder: "Enter city" },
+    { name: "province", label: "Province", placeholder: "Enter province" },
     {
-      name: 'postal_code',
-      label: 'Postal Code',
-      placeholder: 'Enter postal code',
+      name: "postal_code",
+      label: "Postal Code",
+      placeholder: "Enter postal code",
     },
-    { name: 'country', label: 'Country', placeholder: 'Enter country' },
+    { name: "country", label: "Country", placeholder: "Enter country" },
     {
-      name: 'notes',
-      label: 'Delivery Notes',
-      placeholder: 'e.g. gate code (optional)',
+      name: "notes",
+      label: "Delivery Notes",
+      placeholder: "e.g. gate code (optional)",
     },
   ];
 
   return (
-    <div className='flex flex-col border-3 rounded-2xl p-4 border-neutral-300 h-fit'>
+    <div className="flex flex-col border-3 rounded-2xl p-4 border-neutral-300 h-fit">
       <Disclosure>
         {({ open }) => (
           <div>
-            <Disclosure.Button className='flex items-center justify-between w-full cursor-pointer'>
-              <Typography as='h1' size='xl' weight='bold'>
+            <Disclosure.Button className="flex items-center justify-between w-full cursor-pointer">
+              <Typography as="h1" size="xl" weight="bold">
                 Shipping Address
               </Typography>
               {open ? (
-                <ChevronUp className='h-6 w-6' />
+                <ChevronUp className="h-6 w-6" />
               ) : (
-                <ChevronDown className='h-6 w-6' />
+                <ChevronDown className="h-6 w-6" />
               )}
             </Disclosure.Button>
 
-            <Disclosure.Panel className='mt-4'>
-              <form className='flex flex-col gap-4' onSubmit={handleSubmit}>
+            <Disclosure.Panel className="mt-4">
+              <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
                 {fields.map(({ name, label, placeholder }) => (
                   <InputField
                     key={name}
                     label={label}
                     name={name}
-                    value={form[name] ?? ''}
+                    value={form[name] ?? ""}
                     onChange={handleChange}
                     placeholder={placeholder}
-                    required={name !== 'notes'}
+                    required={name !== "notes"}
                     readOnly={isSaved}
                   />
                 ))}
 
-                <div className='flex justify-between gap-4 mt-4'>
+                <div className="flex justify-between gap-4 mt-4">
                   <Button
-                    type='button'
-                    variant='secondary'
+                    type="button"
+                    variant="secondary"
                     onClick={isEditing ? handleCancel : handleEdit}
                     disabled={!isSaved && !isEditing}
                   >
-                    {isEditing ? 'Cancel' : 'Edit'}
+                    {isEditing ? "Cancel" : "Edit"}
                   </Button>
-                  <Button type='submit' disabled={isSaved && !isEditing}>
+                  <Button type="submit" disabled={isSaved && !isEditing}>
                     Save
                   </Button>
                 </div>

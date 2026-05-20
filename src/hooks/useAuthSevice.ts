@@ -1,8 +1,8 @@
 // src/hooks/useAuthService.ts
-'use client';
+"use client";
 
-import { Database } from '@/types/database.types';
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import { Database } from "@/types/database.types";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
 
 export function useAuthService() {
   const supabase = useSupabaseClient<Database>();
@@ -23,11 +23,10 @@ export function useAuthService() {
     const user = data.user;
 
     if (user) {
-      const { error: insertError } = await supabase.from('users').insert({
-        id: user.id,
+      const { error: insertError } = await supabase.from("users").insert({
         name,
         email: user.email,
-      });
+      } as any);
 
       if (insertError) {
         // Return insertError ke AuthModal

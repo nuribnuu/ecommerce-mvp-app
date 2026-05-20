@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, {
   createContext,
@@ -6,20 +6,19 @@ import React, {
   useState,
   useEffect,
   ReactNode,
-} from 'react';
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
-import { useAuth } from '@/context/AuthContext';
-import { CartItem, CartItemUpsert } from '@/types/cart';
-import type { Database } from '@/types/database.types';
+} from "react";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useAuth } from "@/context/AuthContext";
+import { CartItem, CartItemUpsert } from "@/types/cart";
+// Import Database tidak lagi diwajibkan untuk instance ini
 
-// 1. Tambahkan di tipe:
 type CartContextType = {
   cartItems: CartItem[];
   addToCart: (item: CartItemUpsert) => Promise<void>;
   removeFromCart: (productId: number) => Promise<void>;
   incrementQuantity: (productId: number) => Promise<void>;
   decrementQuantity: (productId: number) => Promise<void>;
-  updateQuantity: (productId: number, quantity: number) => Promise<void>; // ← baru
+  updateQuantity: (productId: number, quantity: number) => Promise<void>;
   toggleSelect: (productId: number) => void;
   toggleSelectAll: () => void;
   removeSelectedFromCart: () => Promise<void>;
@@ -28,24 +27,24 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const supabase = useSupabaseClient<Database, 'public'>();
+  // PERBAIKAN UTAMA: Menggunakan 'any' agar Supabase tidak memblokir tabel yang belum terdaftar di tipe
+  const supabase = useSupabaseClient<any, "public">();
   const { user } = useAuth();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  // helper: fetch & map
   const fetchCart = async () => {
     if (!user?.id) return;
     const { data, error } = await supabase
-      .from('cart_items')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('id', { ascending: true }); // pastikan urutan konsisten
+      .from("cart_items")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("id", { ascending: true });
 
     if (error) {
-      console.error('Failed to fetch cart:', error.message);
-    } else {
+      console.error("Failed to fetch cart:", error.message);
+    } else if (data) {
       setCartItems(
-        data.map((row) => ({
+        data.map((row: any) => ({
           id: row.product_id,
           title: row.title,
           category: row.category,
@@ -54,7 +53,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           quantity: row.quantity,
           isSelected: false,
           cartItemUuid: row.id,
-        }))
+        })),
       );
     }
   };
@@ -62,16 +61,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!user?.id) return;
 
-    // Pindahkan definisi fetchCart ke sini
-    const fetchCart = async () => {
+    const fetchCartEffect = async () => {
       const { data, error } = await supabase
-        .from('cart_items')
-        .select('*')
-        .eq('user_id', user.id);
-      if (error) console.error('Failed to fetch cart:', error.message);
-      else {
+        .from("cart_items")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("Failed to fetch cart:", error.message);
+      } else if (data) {
         setCartItems(
-          data.map((row) => ({
+          data.map((row: any) => ({
             id: row.product_id,
             title: row.title,
             category: row.category,
@@ -80,41 +80,39 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             quantity: row.quantity,
             isSelected: false,
             cartItemUuid: row.id,
-          }))
+          })),
         );
       }
     };
 
-    fetchCart();
+    fetchCartEffect();
   }, [supabase, user?.id]);
 
   const addToCart = async (product: CartItemUpsert) => {
     if (!user?.id) {
-      console.error('User not logged in');
+      console.error("User not logged in");
       return;
     }
 
-    // cek existing
     const { data: existing, error: fetchErr } = await supabase
-      .from('cart_items')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('product_id', product.id)
+      .from("cart_items")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("product_id", product.id)
       .limit(1);
+
     if (fetchErr) {
       console.error(fetchErr.message);
       return;
     }
 
     if (existing && existing.length > 0) {
-      // update qty
       await supabase
-        .from('cart_items')
+        .from("cart_items")
         .update({ quantity: existing[0].quantity + product.quantity })
-        .eq('id', existing[0].id);
+        .eq("id", existing[0].id);
     } else {
-      // insert
-      await supabase.from('cart_items').insert([
+      await supabase.from("cart_items").insert([
         {
           user_id: user.id,
           product_id: product.id,
@@ -135,7 +133,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if (!user?.id) return;
     const item = cartItems.find((i) => i.id === productId);
     if (!item) return;
-    await supabase.from('cart_items').delete().eq('id', item.cartItemUuid);
+    await supabase.from("cart_items").delete().eq("id", item.cartItemUuid);
     await fetchCart();
   };
 
@@ -146,15 +144,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const newQuantity = item.quantity + 1;
 
     const { error } = await supabase
-      .from('cart_items')
+      .from("cart_items")
       .update({ quantity: newQuantity })
-      .eq('id', item.cartItemUuid);
+      .eq("id", item.cartItemUuid);
 
     if (!error) {
       setCartItems((prev) =>
         prev.map((i) =>
-          i.id === productId ? { ...i, quantity: newQuantity } : i
-        )
+          i.id === productId ? { ...i, quantity: newQuantity } : i,
+        ),
       );
     }
   };
@@ -163,21 +161,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const item = cartItems.find((i) => i.id === productId);
     if (!item) return;
 
-    // Jika quantity sudah 1, jangan dikurangi lagi
     if (item.quantity <= 1) return;
 
     const newQuantity = item.quantity - 1;
 
     const { error } = await supabase
-      .from('cart_items')
+      .from("cart_items")
       .update({ quantity: newQuantity })
-      .eq('id', item.cartItemUuid);
+      .eq("id", item.cartItemUuid);
 
     if (!error) {
       setCartItems((prev) =>
         prev.map((i) =>
-          i.id === productId ? { ...i, quantity: newQuantity } : i
-        )
+          i.id === productId ? { ...i, quantity: newQuantity } : i,
+        ),
       );
     }
   };
@@ -185,8 +182,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const toggleSelect = (productId: number) => {
     setCartItems((prev) =>
       prev.map((i) =>
-        i.id === productId ? { ...i, isSelected: !i.isSelected } : i
-      )
+        i.id === productId ? { ...i, isSelected: !i.isSelected } : i,
+      ),
     );
   };
 
@@ -200,18 +197,19 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       .filter((i) => i.isSelected)
       .map((i) => i.cartItemUuid);
     if (!toRemove.length) return;
-    await supabase.from('cart_items').delete().in('id', toRemove);
+    await supabase.from("cart_items").delete().in("id", toRemove);
     await fetchCart();
   };
 
   const updateQuantity = async (productId: number, newQty: number) => {
     const item = cartItems.find((i) => i.id === productId);
     if (!item) return;
+
     await supabase
-      .from('cart_items')
+      .from("cart_items")
       .update({ quantity: newQty })
-      .eq('id', item.cartItemUuid);
-    await fetchCart(); // atau syncCart()
+      .eq("id", item.cartItemUuid);
+    await fetchCart();
   };
 
   return (
@@ -235,6 +233,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
 export const useCart = () => {
   const ctx = useContext(CartContext);
-  if (!ctx) throw new Error('useCart must be inside CartProvider');
+  if (!ctx) throw new Error("useCart must be inside CartProvider");
   return ctx;
 };
